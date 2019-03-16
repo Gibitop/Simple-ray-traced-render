@@ -11,7 +11,7 @@ Ray-traced render with basic functionality. It can render planes and spheres, su
 ```
 git clone https://github.com/Gibitop/Simple-ray-traced-render.git
 cd Simple-ray-traced-render
-g++ ./src/main.cpp -o main -O3 -fopenmp -llibpng 
+g++ ./src/main.cpp -o main -O3 -std=c++11 -fopenmp -llibpng 
 ./main
 ```
 
@@ -42,8 +42,8 @@ All customization happens in src/main.cpp file and requires recompilation for ch
 - **roughness** - self-explanatory
 
 ### Objects:
-- Plane: defines by 3 points and a material
-- Sphere: defined by center point, radius (float) and a material
+- **Plane**: defines by 3 points and a material
+- **Sphere**: defined by center point, radius (float) and a material
 
 ### Adding objects:
 To add a new type of object, make a new class, derived from ```Renderable```, and implement ```intersect``` and ```getNormal``` methods
