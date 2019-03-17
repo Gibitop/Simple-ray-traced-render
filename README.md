@@ -11,7 +11,7 @@ Ray-traced render with basic functionality. It can render planes and spheres, su
 ```
 git clone https://github.com/Gibitop/Simple-ray-traced-render.git
 cd Simple-ray-traced-render
-g++ ./src/main.cpp -o main -O3 -std=c++11 -fopenmp -llibpng 
+g++ ./src/main.cpp -o main -O3 -std=c++11 -fopenmp -lpng 
 ./main
 ```
 
