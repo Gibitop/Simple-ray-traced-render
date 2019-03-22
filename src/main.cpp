@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <math.h>
 #include <random>
@@ -17,7 +18,7 @@
 #include "plane.h"
 #include "sphere.h"
 
-const char *filename = "render.png";
+const char* filename = "render.png";
 const int w = 400;
 const int h = 400;
 const float fov = 1;
@@ -42,37 +43,31 @@ inline float clamp(float val, float min, float max)
     return val < min ? min : (val > max ? max : val);
 }
 
-inline int floatToChannel(float input)
+inline unsigned char floatToChannel(float input)
 {
-    return clamp(floor(pow(input, imageGamma) * sensitivity), 0, 255);
+    return (unsigned char) clamp(floor(pow(input, imageGamma) * sensitivity), 0, 255);
 }
 
 int main()
 {
-    png::image<png::rgb_pixel> image(w, h);
-
-    std::cout << "Render started\n";
-    time_t start = time(0);
-    srand(start);
-
+    Vec3* floatImage = new Vec3[w * h];
     int sensorSide = w > h ? w : h;
+    std::vector<Renderable*> objects;
 
-    Material *redLight = new Material(
+    Material* redLight = new Material(
         Vec3(1, 0, 0),
         Vec3(0, 0, 0),
         0);
 
-    Material *blueLight = new Material(
+    Material* blueLight = new Material(
         Vec3(0, 0, 1),
         Vec3(0, 0, 0),
         0);
 
-    Material *diffuse = new Material(
+    Material* diffuse = new Material(
         Vec3(0, 0, 0),
         Vec3(0.9, 0.9, 0.9),
         0.5);
-
-    std::vector<Renderable *> objects;
 
     objects.push_back(new Plane(
         Vec3(0, -1, 0),
@@ -88,27 +83,34 @@ int main()
         Vec3(1.2, 0, 5),
         1, blueLight));
 
-
-    bool progress = true;
-    for (int y = h / 2 - 1; y >= -h / 2; y--)
+    time_t start = time(0);
+    time_t lastPass = start;
+    time_t allPassed = 0;
+    srand(start);
+    std::cout << "Render started\n";
+    for (unsigned int sample = 0; sample < spp; sample++)
     {
-        if (progress)
-        {
-            progress = false;
-            std::cout << "\rProgress: " << 100 * (y - h / 2) / -h << '%' << std::flush;
-        }
+        std::cout << "\r"
+                  << "Progress: " << round((float) sample / spp * 100) << '%' << std::setw(4) << '\0'
+                  << "Time: " << allPassed << " sec" << std::setw(4) << '\0';
+        if (sample > 0)
+            std::cout << "ETA: "
+                      << round((spp - sample) * ((float) allPassed / sample))
+                      << " sec" << std::setw(2) << '\0';
+        std::cout << std::flush;
+
 #pragma omp parallel for
-        for (int x = -w / 2; x < w / 2; x++)
+        for (int y = h / 2 - 1; y >= -h / 2; y--)
         {
-            Vec3 sampleResult(0, 0, 0);
-            for (unsigned int sample = 0; sample < spp; sample++)
+            for (int x = -w / 2; x < w / 2; x++)
             {
+
                 Vec3 result(0, 0, 0);
                 Vec3 reflection(1, 1, 1);
                 Vec3 origin = camPos;
                 Vec3 direction(
-                    (float)x / sensorSide + ((rand() % 20) / 10.f - 1) * sampleVariation,
-                    (float)y / sensorSide + ((rand() % 20) / 10.f - 1) * sampleVariation,
+                    (float) x / sensorSide + ((rand() % 20) / 10.f - 1) * sampleVariation,
+                    (float) y / sensorSide + ((rand() % 20) / 10.f - 1) * sampleVariation,
                     1 / fov);
                 direction = direction.normalized();
                 for (int bounce = 0; bounce < bounces; bounce++)
@@ -140,32 +142,40 @@ int main()
 
                     origin = origin + direction * lowestDistance;
                     Vec3 hitNormal = objects.at(closest)->getNormal(origin);
-                    direction = direction -
-                                (hitNormal * 2) * (direction.dot(hitNormal));
+                    direction = direction - (hitNormal * 2) * (direction.dot(hitNormal));
                     direction = lerp(direction,
-                                     Vec3(((rand() % 20) / 10.f - 1),
-                                          ((rand() % 20) / 10.f - 1),
-                                          ((rand() % 20) / 10.f - 1))
-                                         .normalized(),
-                                     objects.at(closest)->mat->roughness);
+                        Vec3(((rand() % 20) / 10.f - 1),
+                            ((rand() % 20) / 10.f - 1),
+                            ((rand() % 20) / 10.f - 1))
+                            .normalized(),
+                        objects.at(closest)->mat->roughness);
                     direction = direction.normalized();
                 }
-                sampleResult += result;
+                floatImage[(-y + h / 2 - 1) * h + x + w / 2] += result;
             }
-            image[(-y + h / 2 - 1)][x + w / 2] = png::rgb_pixel(
-                floatToChannel(sampleResult.x / spp),
-                floatToChannel(sampleResult.y / spp),
-                floatToChannel(sampleResult.z / spp));
         }
-        progress = true;
+        time_t currentTime = time(0);
+        allPassed += currentTime - lastPass;
+        lastPass = currentTime;
     }
-    std::cout << "\nRender finished in " << time(0) - start << " seconds\n";
+    std::cout << "\rProgress: 100%\nRender finished\n";
 
+    png::image<png::rgb_pixel> image(w, h);
+    for (int y = 0; y < h; y++)
+    {
+#pragma omp parallel for
+        for (int x = 0; x < w; x++)
+        {
+            image[y][x].red = floatToChannel(floatImage[y * h + x].x / spp);
+            image[y][x].green = floatToChannel(floatImage[y * h + x].y / spp);
+            image[y][x].blue = floatToChannel(floatImage[y * h + x].z / spp);
+        }
+    }
     image.write(filename);
 
     for (unsigned int i = 0; i < objects.size(); i++)
         delete objects.at(i);
-
+    delete[] floatImage;
     delete redLight;
     delete diffuse;
 

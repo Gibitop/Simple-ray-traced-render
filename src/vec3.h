@@ -13,7 +13,7 @@ class Vec3
         this->y = y;
         this->z = z;
     }
-    float x = 1, y = 1, z = 1;
+    float x = 0, y = 0, z = 0;
 
     inline float getLength()
     {
