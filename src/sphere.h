@@ -12,6 +12,8 @@ class Sphere : public Renderable
         this->radius = radius;
     }
 
+    ~Sphere(){}
+
     Vec3 center;
     float radius;
 
