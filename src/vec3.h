@@ -5,7 +5,7 @@
 
 class Vec3
 {
-  public:
+public:
     Vec3() {}
     Vec3(float x, float y, float z)
     {
@@ -13,7 +13,7 @@ class Vec3
         this->y = y;
         this->z = z;
     }
-    float x = 1, y = 1, z = 1;
+    float x = 0, y = 0, z = 0;
 
     inline float getLength()
     {
@@ -49,6 +49,11 @@ class Vec3
             this->x - other.x,
             this->y - other.y,
             this->z - other.z);
+    }
+
+    inline Vec3 operator-()
+    {
+        return Vec3(-x, -y, -z);
     }
 
     inline Vec3 operator+(Vec3 other)
