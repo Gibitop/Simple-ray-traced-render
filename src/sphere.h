@@ -5,17 +5,17 @@
 
 class Sphere : public Renderable
 {
-  public:
+public:
+    Vec3 center;
+    float radius;
+
     Sphere(Vec3 center, float radius, Material *mat) : Renderable(mat)
     {
         this->center = center;
         this->radius = radius;
     }
 
-    ~Sphere(){}
-
-    Vec3 center;
-    float radius;
+    ~Sphere() {}
 
     float intersect(Vec3 origin, Vec3 ray) override
     {
