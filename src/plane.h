@@ -1,29 +1,47 @@
 #ifndef PLANE_H
 #define PLANE_H
+#ifndef NO_LOG
+#include <iostream>
+#endif
 #include "renderable.h"
 
 class Plane : public Renderable
 {
-  public:
-    Plane(Vec3 p0, Vec3 p1, Vec3 p2, Material* mat) : Renderable(mat)
+public:
+    Vec3 point, normal;
+
+    Plane(Vec3 point, Vec3 normal, Material *mat) : Renderable(mat)
     {
-        this->p0 = p0;
-        this->p1 = p1;
-        this->p2 = p2;
+        this->point = point;
+        this->normal = normal.normalized();
     }
 
-    Vec3 p0, p1, p2;
+    Plane(Vec3 p0, Vec3 p1, Vec3 p2, Material *mat) : Renderable(mat)
+    {
+        this->point = p0;
+        this->normal = (p1 - p0).cross(p2 - p0).normalized();
+    }
 
     float intersect(Vec3 origin, Vec3 ray) override
     {
-        ray = ray.normalized();
-        Vec3 cross = (this->p1 - this->p0).cross(this->p2 - this->p0);
-        return cross.dot(origin - this->p0) / (cross.dot((ray - origin) * -1));
+        // https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
+        float denominator = ray.normalized().dot(-this->normal);
+        if (denominator > 1e-6)
+        {
+            float distance = (this->point - origin).dot(-this->normal) / denominator;
+            // if (distance <= 0)
+                // std::cout << "Distance <= 0" << std::endl;
+            // else
+                // std::cout << "intersect" << std::endl;
+            return distance > 0 ? distance : -1;
+        }
+        // std::cout << "Denominator < 0" << std::endl;
+        return -1;
     }
 
     Vec3 getNormal(Vec3) override
     {
-        return (this->p1 - this->p0).cross(this->p2 - this->p0).normalized();
+        return this->normal;
     }
 };
 #endif
