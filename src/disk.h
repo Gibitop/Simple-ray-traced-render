@@ -6,15 +6,20 @@
 class Disk : public Plane
 {
 public:
-    Disk(Vec3 center, Vec3 p1, Vec3 p2, float radius, Material* mat)
+    Vec3 center;
+    float radius;
+
+    Disk(Vec3 center, Vec3 direction, float radius, Material *mat) : Plane(center, direction, mat) {
+        this->center = center;
+        this->radius = radius;
+    }
+
+    Disk(Vec3 center, Vec3 p1, Vec3 p2, float radius, Material *mat)
         : Plane(center, p1, p2, mat)
     {
         this->center = center;
         this->radius = radius;
     }
-
-    Vec3 center;
-    float radius;
 
     float intersect(Vec3 origin, Vec3 ray) override
     {
